@@ -11,9 +11,9 @@ const { deleteFile } = require("../utils/googleDrive");
 
 // Configure Cloudinary
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'musaadamu',
-  api_key: process.env.CLOUDINARY_API_KEY || '118667176731122',
-  api_secret: process.env.CLOUDINARY_API_SECRET || 'QwRlt2-iT57X6GlbzTarDSA5soY',
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dxnp54kf2',
+  api_key: process.env.CLOUDINARY_API_KEY || '969391468651285',
+  api_secret: process.env.CLOUDINARY_API_SECRET || 'Q0VIOl0m3JrPx9dj7PwYE8uW6n4',
   secure: true,
 });
 
@@ -219,19 +219,16 @@ exports.uploadJournal = async (req, res) => {
         let pdfUploadError = null;
         try {
             const pdfStats = await fsPromises.stat(pdfFile.path);
-            console.log('PDF file exists and is ready for upload, size:', pdfStats.size, 'bytes');
-
-            pdfUploadResult = await cloudinary.uploader.upload(pdfFile.path, {
-                folder: 'coelsN_Uploads',
+            console.log('PDF file exists and is ready for upload, size:', pdfStats.size, 'bytes');            pdfUploadResult = await cloudinary.uploader.upload(pdfFile.path, {
+                folder: 'Upload',
                 resource_type: 'raw',
                 public_id: `${Date.now()}-${pdfFile.filename}`,
                 use_filename: true,
-                unique_filename: false,
+                unique_filename: true,
                 overwrite: true,
                 access_mode: 'public',
                 type: 'upload',
-                accessibility: 'public',  // Ensure the file is publicly accessible
-                access_control: [{ access_type: 'anonymous' }]  // Allow anonymous access
+                tags: ['journal_pdf'],
             });
             console.log('PDF file uploaded to Cloudinary successfully:', pdfUploadResult);
         } catch (error) {
@@ -248,19 +245,16 @@ exports.uploadJournal = async (req, res) => {
         let docxUploadError = null;
         try {
             const docxStats = await fsPromises.stat(docxFile.path);
-            console.log('DOCX file exists and is ready for upload, size:', docxStats.size, 'bytes');
-
-            docxUploadResult = await cloudinary.uploader.upload(docxFile.path, {
-                folder: 'coelsN_Uploads',
+            console.log('DOCX file exists and is ready for upload, size:', docxStats.size, 'bytes');            docxUploadResult = await cloudinary.uploader.upload(docxFile.path, {
+                folder: 'Upload',
                 resource_type: 'raw',
                 public_id: `${Date.now()}-${docxFile.filename}`,
                 use_filename: true,
-                unique_filename: false,
+                unique_filename: true,
                 overwrite: true,
                 access_mode: 'public',
                 type: 'upload',
-                accessibility: 'public',  // Ensure the file is publicly accessible
-                access_control: [{ access_type: 'anonymous' }]  // Allow anonymous access
+                tags: ['journal_docx'],
             });
             console.log('DOCX file uploaded to Cloudinary successfully:', docxUploadResult);
         } catch (error) {
@@ -469,17 +463,29 @@ exports.updateJournalStatus = async (req, res) => {
 // Delete journal
 exports.deleteJournal = async (req, res) => {
     try {
-        const journal = await Journal.findByIdAndDelete(req.params.id);
+        const journal = await Journal.findById(req.params.id);
         if (!journal) {
             return res.status(404).json({ message: "Journal not found" });
         }
 
-        // Delete files from Cloudinary if needed
-        // Note: Cloudinary has its own cleanup policies, so this is optional
-        // You can implement Cloudinary deletion here if needed
+        // Delete files from Cloudinary
+        try {
+            if (journal.pdfFileId) {
+                await cloudinary.uploader.destroy(journal.pdfFileId, { resource_type: 'raw' });
+            }
+            if (journal.docxFileId) {
+                await cloudinary.uploader.destroy(journal.docxFileId, { resource_type: 'raw' });
+            }
+        } catch (cloudinaryError) {
+            console.error('Error deleting files from Cloudinary:', cloudinaryError);
+            // Continue with journal deletion even if Cloudinary deletion fails
+        }
+
+        // Delete the journal from database
+        await Journal.findByIdAndDelete(req.params.id);
 
         res.json({
-            message: "Journal deleted successfully"
+            message: "Journal and associated files deleted successfully"
         });
     } catch (error) {
         res.status(500).json({
