@@ -219,7 +219,9 @@ exports.uploadJournal = async (req, res) => {
         let pdfUploadError = null;
         try {
             const pdfStats = await fsPromises.stat(pdfFile.path);
-            console.log('PDF file exists and is ready for upload, size:', pdfStats.size, 'bytes');            pdfUploadResult = await cloudinary.uploader.upload(pdfFile.path, {
+            console.log('PDF file exists and is ready for upload, size:', pdfStats.size, 'bytes');
+            pdfUploadResult = await cloudinary.uploader.upload(pdfFile.path, {
+                folder: 'Upload',
                 folder: 'Upload',
                 resource_type: 'raw',
                 public_id: `${Date.now()}-${pdfFile.filename}`,
@@ -245,7 +247,9 @@ exports.uploadJournal = async (req, res) => {
         let docxUploadError = null;
         try {
             const docxStats = await fsPromises.stat(docxFile.path);
-            console.log('DOCX file exists and is ready for upload, size:', docxStats.size, 'bytes');            docxUploadResult = await cloudinary.uploader.upload(docxFile.path, {
+            console.log('DOCX file exists and is ready for upload, size:', docxStats.size, 'bytes');
+            docxUploadResult = await cloudinary.uploader.upload(docxFile.path, {
+                folder: 'Upload',
                 folder: 'Upload',
                 resource_type: 'raw',
                 public_id: `${Date.now()}-${docxFile.filename}`,

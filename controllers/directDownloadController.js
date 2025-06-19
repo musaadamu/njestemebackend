@@ -38,57 +38,44 @@ exports.directDownloadPdf = async (req, res) => {
 
         console.log('Downloading PDF from Cloudinary URL:', cloudinaryUrl);
 
+        // Use the fl_attachment URL format for better download experience
+        let downloadUrl = cloudinaryUrl;
+        if (cloudinaryUrl.includes('/upload/') && !cloudinaryUrl.includes('fl_attachment')) {
+            downloadUrl = cloudinaryUrl.replace('/upload/', '/upload/fl_attachment/');
+            console.log('Using Cloudinary URL with fl_attachment:', downloadUrl);
+        }
+
         try {
-            // Use the fl_attachment URL format for better download experience
-            let downloadUrl = cloudinaryUrl;
-            if (cloudinaryUrl.includes('/upload/') && !cloudinaryUrl.includes('fl_attachment')) {
-                downloadUrl = cloudinaryUrl.replace('/upload/', '/upload/fl_attachment/');
-                console.log('Using Cloudinary URL with fl_attachment:', downloadUrl);
-            }
-
-            // Encode the URL to handle special characters
-            const encodedUrl = encodeURI(downloadUrl);
-
             // Download the file from Cloudinary
             const response = await axios({
                 method: 'GET',
-                url: encodedUrl,
+                url: encodeURI(downloadUrl),
                 responseType: 'arraybuffer',
-                timeout: 30000, // 30 second timeout
-                headers: {
-                    'Accept': '*/*',
-                    'Cache-Control': 'no-cache'
-                }
+                timeout: 30000 // 30 second timeout
             });
 
-            // Set the appropriate headers
-            res.setHeader('Content-Type', 'application/pdf');
-
-            // Sanitize the filename to remove special characters that cause issues in headers
+            // Sanitize the filename
             const sanitizedFilename = journal.title
-                .replace(/[^\w\s-]/g, '') // Remove special characters
-                .replace(/\s+/g, '_')     // Replace spaces with underscores
-                .substring(0, 100);       // Limit length
+                ? journal.title
+                    .replace(/[^\w\s-]/g, '') // Remove special characters
+                    .replace(/\s+/g, '_')     // Replace spaces with underscores
+                    .substring(0, 100)        // Limit length
+                : 'journal';
 
-            // Use the sanitized filename or a fallback
-            const filename = sanitizedFilename || 'document';
-
-            res.setHeader('Content-Disposition', `attachment; filename="${filename}.pdf"`);
+            // Set appropriate headers for file download
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename="${sanitizedFilename}.pdf"`);
             res.setHeader('Content-Length', response.data.length);
 
-            // Send the file data
-            res.send(response.data);
-            console.log('PDF file sent to client successfully');
-        } catch (error) {
-            console.error('Error downloading PDF from Cloudinary:', error);
-            return res.status(500).json({
-                message: 'Error downloading PDF file from Cloudinary',
-                error: error.message
-            });
+            // Stream the file directly to the client
+            return res.send(response.data);
+        } catch (downloadError) {
+            console.error('Error downloading file from Cloudinary:', downloadError);
+            throw new Error('Failed to download file from Cloudinary');
         }
     } catch (error) {
-        console.error('Error in direct download PDF:', error);
-        res.status(500).json({
+        console.error('Error in directDownloadPdf:', error);
+        return res.status(500).json({
             message: 'Server error during PDF download',
             error: error.message
         });
@@ -132,57 +119,44 @@ exports.directDownloadDocx = async (req, res) => {
 
         console.log('Downloading DOCX from Cloudinary URL:', cloudinaryUrl);
 
+        // Use the fl_attachment URL format for better download experience
+        let downloadUrl = cloudinaryUrl;
+        if (cloudinaryUrl.includes('/upload/') && !cloudinaryUrl.includes('fl_attachment')) {
+            downloadUrl = cloudinaryUrl.replace('/upload/', '/upload/fl_attachment/');
+            console.log('Using Cloudinary URL with fl_attachment:', downloadUrl);
+        }
+
         try {
-            // Use the fl_attachment URL format for better download experience
-            let downloadUrl = cloudinaryUrl;
-            if (cloudinaryUrl.includes('/upload/') && !cloudinaryUrl.includes('fl_attachment')) {
-                downloadUrl = cloudinaryUrl.replace('/upload/', '/upload/fl_attachment/');
-                console.log('Using Cloudinary URL with fl_attachment:', downloadUrl);
-            }
-
-            // Encode the URL to handle special characters
-            const encodedUrl = encodeURI(downloadUrl);
-
             // Download the file from Cloudinary
             const response = await axios({
                 method: 'GET',
-                url: encodedUrl,
+                url: encodeURI(downloadUrl),
                 responseType: 'arraybuffer',
-                timeout: 30000, // 30 second timeout
-                headers: {
-                    'Accept': '*/*',
-                    'Cache-Control': 'no-cache'
-                }
+                timeout: 30000 // 30 second timeout
             });
 
-            // Set the appropriate headers
-            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-
-            // Sanitize the filename to remove special characters that cause issues in headers
+            // Sanitize the filename
             const sanitizedFilename = journal.title
-                .replace(/[^\w\s-]/g, '') // Remove special characters
-                .replace(/\s+/g, '_')     // Replace spaces with underscores
-                .substring(0, 100);       // Limit length
+                ? journal.title
+                    .replace(/[^\w\s-]/g, '') // Remove special characters
+                    .replace(/\s+/g, '_')     // Replace spaces with underscores
+                    .substring(0, 100)        // Limit length
+                : 'journal';
 
-            // Use the sanitized filename or a fallback
-            const filename = sanitizedFilename || 'document';
-
-            res.setHeader('Content-Disposition', `attachment; filename="${filename}.docx"`);
+            // Set appropriate headers for file download
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+            res.setHeader('Content-Disposition', `attachment; filename="${sanitizedFilename}.docx"`);
             res.setHeader('Content-Length', response.data.length);
 
-            // Send the file data
-            res.send(response.data);
-            console.log('DOCX file sent to client successfully');
-        } catch (error) {
-            console.error('Error downloading DOCX from Cloudinary:', error);
-            return res.status(500).json({
-                message: 'Error downloading DOCX file from Cloudinary',
-                error: error.message
-            });
+            // Stream the file directly to the client
+            return res.send(response.data);
+        } catch (downloadError) {
+            console.error('Error downloading file from Cloudinary:', downloadError);
+            throw new Error('Failed to download file from Cloudinary');
         }
     } catch (error) {
-        console.error('Error in direct download DOCX:', error);
-        res.status(500).json({
+        console.error('Error in directDownloadDocx:', error);
+        return res.status(500).json({
             message: 'Server error during DOCX download',
             error: error.message
         });

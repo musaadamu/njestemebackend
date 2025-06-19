@@ -23,7 +23,7 @@ exports.downloadPdfFile = async (req, res) => {
             pdfCloudinaryUrl: journal.pdfCloudinaryUrl || 'Not set'
         });
 
-        // Get the Cloudinary URL
+        // Get the Cloudinary URL, preferring the Cloudinary URL if available
         const cloudinaryUrl = journal.pdfCloudinaryUrl || journal.pdfWebViewLink;
         if (!cloudinaryUrl) {
             console.error('No Cloudinary URL found for PDF file');
@@ -33,11 +33,23 @@ exports.downloadPdfFile = async (req, res) => {
         // For PDFs, use Cloudinary's fl_attachment URL format for better download experience
         let downloadUrl = cloudinaryUrl;
 
-        // Add fl_attachment flag to force download
+        // Add fl_attachment flag to force download if not already present
         if (cloudinaryUrl.includes('/upload/') && !cloudinaryUrl.includes('fl_attachment')) {
             downloadUrl = cloudinaryUrl.replace('/upload/', '/upload/fl_attachment/');
             console.log('Using Cloudinary URL with fl_attachment:', downloadUrl);
         }
+
+        // Sanitize filename for Content-Disposition header
+        const sanitizedFilename = journal.title
+            ? journal.title
+                .replace(/[^\w\s-]/g, '') // Remove special characters
+                .replace(/\s+/g, '_')     // Replace spaces with underscores
+                .substring(0, 100)        // Limit length
+            : 'journal';
+
+        // Set appropriate headers for download
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${sanitizedFilename}.pdf"`);
 
         console.log('Redirecting client to Cloudinary URL:', downloadUrl);
         return res.redirect(downloadUrl);
@@ -73,7 +85,7 @@ exports.downloadDocxFile = async (req, res) => {
             docxCloudinaryUrl: journal.docxCloudinaryUrl || 'Not set'
         });
 
-        // Get the Cloudinary URL
+        // Get the Cloudinary URL, preferring the Cloudinary URL if available
         const cloudinaryUrl = journal.docxCloudinaryUrl || journal.docxWebViewLink;
         if (!cloudinaryUrl) {
             console.error('No Cloudinary URL found for DOCX file');
@@ -83,11 +95,23 @@ exports.downloadDocxFile = async (req, res) => {
         // For DOCX files, use Cloudinary's fl_attachment URL format for better download experience
         let downloadUrl = cloudinaryUrl;
 
-        // Add fl_attachment flag to force download
+        // Add fl_attachment flag to force download if not already present
         if (cloudinaryUrl.includes('/upload/') && !cloudinaryUrl.includes('fl_attachment')) {
             downloadUrl = cloudinaryUrl.replace('/upload/', '/upload/fl_attachment/');
             console.log('Using Cloudinary URL with fl_attachment:', downloadUrl);
         }
+
+        // Sanitize filename for Content-Disposition header
+        const sanitizedFilename = journal.title
+            ? journal.title
+                .replace(/[^\w\s-]/g, '') // Remove special characters
+                .replace(/\s+/g, '_')     // Replace spaces with underscores
+                .substring(0, 100)        // Limit length
+            : 'journal';
+
+        // Set appropriate headers for download
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        res.setHeader('Content-Disposition', `attachment; filename="${sanitizedFilename}.docx"`);
 
         console.log('Redirecting client to Cloudinary URL:', downloadUrl);
         return res.redirect(downloadUrl);
