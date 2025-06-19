@@ -192,9 +192,8 @@ exports.updateUser = async (req, res) => {
 };
 
 exports.createAdmin = async (req, res) => {
-    try {
-        // Re-enable admin check after initial admin creation
-        if (req.user.role !== "admin") {
+    try {        // Check if the user is an admin
+        if (req.user && req.user.role !== "admin") {
             return res.status(403).json({ message: "Access denied. Only admins can create admin accounts." });
         }
 
