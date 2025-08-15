@@ -1,16 +1,19 @@
 const express = require("express");
 const journalController = require("../controllers/journalController");
+const { protect, adminOnly } = require('../middleware/authMiddleware');
+const { uploadRateLimit, validateFileUpload } = require('../middleware/security');
+const { validateJournalSubmission, validateObjectId, validateSearchQuery } = require('../middleware/validation');
 
 const router = express.Router();
 
-// Upload journal route (no authentication required)
-router.post("/", (req, res, next) => {
+// Upload journal route (requires admin authentication)
+router.post("/", protect, adminOnly, uploadRateLimit, (req, res, next) => {
     console.log('journalRoutes POST / upload route invoked');
     journalController.uploadMiddleware(req, res, (err) => {
         if (err) {
             if (err.code === 'LIMIT_FILE_SIZE') {
                 return res.status(413).json({
-                    message: 'File too large. Max size is 50MB'
+                    message: 'File too large. Max size is 10MB'
                 });
             } else if (err.message.includes('Only .docx files are allowed')) {
                 return res.status(400).json({
@@ -19,12 +22,12 @@ router.post("/", (req, res, next) => {
             }
             return res.status(500).json({
                 message: 'File upload failed',
-                error: err.message
+                error: 'Upload failed'
             });
         }
         next();
     });
-}, journalController.uploadJournal);
+}, validateFileUpload, validateJournalSubmission, journalController.uploadJournal);
 
 // Get all journals
 router.get("/", journalController.getJournals);
@@ -35,15 +38,15 @@ console.log('journalController.getJournalsFileInfo:', journalController.getJourn
 router.get("/file-info", journalController.getJournalsFileInfo);
 
 // Search journals
-router.get("/search", journalController.searchJournals);
+router.get("/search", validateSearchQuery, journalController.searchJournals);
 
 // Get journal by ID
-router.get("/:id", journalController.getJournalById);
+router.get("/:id", validateObjectId, journalController.getJournalById);
 
-// Update journal status
-router.patch("/:id/status", journalController.updateJournalStatus);
+// Update journal status (admin only)
+router.patch("/:id/status", protect, adminOnly, validateObjectId, journalController.updateJournalStatus);
 
-// Delete journal
-router.delete("/:id", journalController.deleteJournal);
+// Delete journal (admin only)
+router.delete("/:id", protect, adminOnly, validateObjectId, journalController.deleteJournal);
 
 module.exports = router;

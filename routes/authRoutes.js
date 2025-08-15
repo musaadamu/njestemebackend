@@ -14,17 +14,30 @@
 const express = require('express');
 const { register, login, logout, forgotPassword, resetPassword, updateUser, getProfile, createAdmin } = require('../controllers/authController');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
+const { authRateLimit } = require('../middleware/security');
+const {
+    validateUserRegistration,
+    validateUserLogin,
+    validateProfileUpdate,
+    validatePasswordReset,
+    validatePasswordResetConfirm
+} = require('../middleware/validation');
+
 const router = express.Router();
 
-router.post('/register', register);
-router.post('/login', login);
+// Apply rate limiting to all auth routes
+router.use(authRateLimit);
+
+// Authentication routes with validation
+router.post('/register', validateUserRegistration, register);
+router.post('/login', validateUserLogin, login);
 router.post('/logout', protect, logout);
-router.post('/forgot-password', forgotPassword);
-router.post('/reset-password/:token', resetPassword); // Route for resetting password with token in URL
-router.post('/reset-password', resetPassword); // Alternative route for resetting password with token in body
-router.put('/profile', protect, updateUser); // Route for updating user
-router.get('/profile', protect, getProfile); // Route for getting user profile
-router.get('/me', protect, getProfile); // Alias for /profile to match frontend expectations
-router.post('/create-admin', protect, adminOnly, createAdmin); // Re-enable protect and adminOnly middleware after initial admin creation
+router.post('/forgot-password', validatePasswordReset, forgotPassword);
+router.post('/reset-password/:token', validatePasswordResetConfirm, resetPassword);
+router.post('/reset-password', validatePasswordResetConfirm, resetPassword);
+router.put('/profile', protect, validateProfileUpdate, updateUser);
+router.get('/profile', protect, getProfile);
+router.get('/me', protect, getProfile);
+router.post('/create-admin', protect, adminOnly, validateUserRegistration, createAdmin);
 
 module.exports = router;

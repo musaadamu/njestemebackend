@@ -1,15 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const submissionController = require('../controllers/submissionController');
+const { protect, adminOnly } = require('../middleware/authMiddleware');
+const { uploadRateLimit, validateFileUpload } = require('../middleware/security');
+const { validateJournalSubmission, validateObjectId, validateSearchQuery } = require('../middleware/validation');
 
-// Upload submission with file - use the same approach as journalRoutes
-router.post("/", (req, res, next) => {
+// Upload submission with file (rate limited)
+router.post("/", uploadRateLimit, (req, res, next) => {
     submissionController.uploadMiddleware(req, res, (err) => {
         if (err) {
             console.error('Multer error in route handler:', err);
             if (err.code === 'LIMIT_FILE_SIZE') {
                 return res.status(413).json({
-                    message: 'File too large. Max size is 50MB'
+                    message: 'File too large. Max size is 10MB'
                 });
             } else if (err.message.includes('Only .docx files are allowed')) {
                 return res.status(400).json({
@@ -18,13 +21,13 @@ router.post("/", (req, res, next) => {
             }
             return res.status(500).json({
                 message: 'File upload failed',
-                error: err.message
+                error: 'Upload failed'
             });
         }
         console.log('File upload successful in route handler:', req.file);
         next();
     });
-}, submissionController.uploadSubmission);
+}, validateFileUpload, validateJournalSubmission, submissionController.uploadSubmission);
 
 // Test endpoint for file uploads
 router.post("/test-upload", (req, res, next) => {
@@ -55,19 +58,19 @@ router.post("/test-upload", (req, res, next) => {
     });
 });
 
-// Get all submissions with pagination and filtering
-router.get('/', submissionController.getSubmissions);
+// Get all submissions with pagination and filtering (admin only)
+router.get('/', protect, adminOnly, submissionController.getSubmissions);
 
-// Search submissions
-router.get('/search', submissionController.searchSubmissions);
+// Search submissions (admin only)
+router.get('/search', protect, adminOnly, validateSearchQuery, submissionController.searchSubmissions);
 
-// Get a single submission by ID
-router.get('/:id', submissionController.getSubmissionById);
+// Get a single submission by ID (admin only)
+router.get('/:id', protect, adminOnly, validateObjectId, submissionController.getSubmissionById);
 
-// Update submission status
-router.patch('/:id/status', submissionController.updateSubmissionStatus);
+// Update submission status (admin only)
+router.patch('/:id/status', protect, adminOnly, validateObjectId, submissionController.updateSubmissionStatus);
 
-// Delete a submission
-router.delete('/:id', submissionController.deleteSubmission);
+// Delete a submission (admin only)
+router.delete('/:id', protect, adminOnly, validateObjectId, submissionController.deleteSubmission);
 
 module.exports = router;

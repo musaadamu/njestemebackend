@@ -18,6 +18,21 @@ const Journal = require('./models/Journal');
 // Middleware imports
 const { protect } = require('./middleware/authMiddleware');
 
+// Security middleware imports
+const {
+    authRateLimit,
+    generalRateLimit,
+    uploadRateLimit,
+    speedLimiter,
+    securityHeaders,
+    sanitizeInput,
+    mongoSanitize,
+    hpp,
+    validateFileUpload,
+    secureErrorHandler,
+    securityLogger
+} = require('./middleware/security');
+
 // Route imports
 const submissionRoutes = require('./routes/submissionRoutes');
 const submissionDownloadRoutes = require('./routes/submissionDownloadRoutes');
@@ -42,10 +57,19 @@ const PORT = process.env.PORT || 5000;
 const isProduction = process.env.NODE_ENV === 'production';
 console.log(`Environment: ${isProduction ? 'Production' : 'Development'}`);
 
+// Security middleware setup (must be first)
+app.use(securityHeaders);
+app.use(securityLogger);
+app.use(generalRateLimit);
+app.use(speedLimiter);
+app.use(mongoSanitize);
+app.use(hpp);
+
 // Middleware setup
-app.use(bodyParser.json({ limit: '50mb' }));
-app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
-app.use(morgan('dev'));
+app.use(bodyParser.json({ limit: '10mb' })); // Reduced from 50mb for security
+app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
+app.use(sanitizeInput); // Sanitize all inputs
+app.use(morgan('combined')); // More detailed logging for security
 
 // We'll handle multipart/form-data in the specific routes that need it
 // Removing global multer middleware to avoid conflicts with route-specific multer configurations
@@ -53,9 +77,9 @@ app.use(morgan('dev'));
 // CORS Configuration for development and production
 const allowedOrigins = [
     'http://localhost:3000',           // Local frontend development
-    'http://localhost:5000',           // Vite default port
+    'http://localhost:5173',           // Vite default port
     'https://coels-n-internal-journal-frontend.vercel.app', // Production frontend
-    'https://coels-n-internal-journal-frontend.vercel.app'  // Production frontend URL
+    'https://njostemejournal.com.ng'   // Production domain
 ].filter(Boolean);
 
 console.log('Allowed CORS origins:', allowedOrigins);
@@ -717,6 +741,19 @@ app.get('/list-files', (req, res) => {
         }
     });
 });
+
+// 404 handler for undefined routes
+app.use('*', (req, res) => {
+    console.log(`404 - Route not found: ${req.method} ${req.originalUrl}`);
+    res.status(404).json({
+        error: 'Route not found',
+        path: req.originalUrl,
+        method: req.method
+    });
+});
+
+// Global error handler (must be last)
+app.use(secureErrorHandler);
 
 // Improved MongoDB Connection
 const connectDB = async () => {

@@ -97,30 +97,31 @@ exports.register = async (req, res) => {
 // Login User
 exports.login = async (req, res) => {
     try {
-        // Preserve original password for comparison
-        const email = req.body.email ? req.body.email.trim() : '';
-        const password = req.body.password || ''; // Don't trim password for login
+        const email = req.body.email ? req.body.email.trim().toLowerCase() : '';
+        const password = req.body.password || '';
 
         console.log("Login attempt for email:", email);
 
-        const user = await User.findOne({ email });
+        // Always perform password comparison to prevent timing attacks
+        let user = await User.findOne({ email }).select('+password');
+        let isPasswordValid = false;
 
-        if (!user) {
-            console.log("❌ User not found with email:", email);
-            return res.status(401).json({ message: "Invalid email or password" });
+        if (user) {
+            isPasswordValid = await bcrypt.compare(password, user.password);
+        } else {
+            // Perform a dummy bcrypt operation to prevent timing attacks
+            await bcrypt.compare(password, '$2b$10$dummy.hash.to.prevent.timing.attacks.dummy.hash.value');
         }
 
-        console.log("✅ Found user:", user.email);
-
-        // Compare password with the hash stored in database
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-
-        if (!isPasswordValid) {
-            console.log("❌ Password mismatch for user:", user.email);
-            return res.status(401).json({ message: "Invalid email or password" });
+        if (!user || !isPasswordValid) {
+            console.log("❌ Invalid login attempt for email:", email);
+            return res.status(401).json({
+                message: "Invalid email or password",
+                timestamp: new Date().toISOString()
+            });
         }
 
-        console.log("✅ Password matched!");
+        console.log("✅ Successful login for user:", user.email);
 
         const token = generateToken(user);
 
