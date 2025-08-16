@@ -27,20 +27,34 @@ const createRateLimit = (windowMs, max, message) => {
 // Different rate limits for different endpoints
 const authRateLimit = createRateLimit(
     15 * 60 * 1000, // 15 minutes
-    5, // 5 attempts
+    10, // 10 attempts (increased from 5)
     'Too many authentication attempts, please try again later'
 );
 
 const generalRateLimit = createRateLimit(
     15 * 60 * 1000, // 15 minutes
-    100, // 100 requests
+    1000, // 1000 requests (increased from 100)
     'Too many requests, please try again later'
 );
 
 const uploadRateLimit = createRateLimit(
     60 * 60 * 1000, // 1 hour
-    10, // 10 uploads
+    20, // 20 uploads (increased from 10)
     'Too many file uploads, please try again later'
+);
+
+// More lenient rate limit for public endpoints (journals, etc.)
+const publicRateLimit = createRateLimit(
+    15 * 60 * 1000, // 15 minutes
+    2000, // 2000 requests
+    'Too many requests, please try again later'
+);
+
+// Admin operations rate limit (more lenient for complex operations)
+const adminRateLimit = createRateLimit(
+    60 * 60 * 1000, // 1 hour window
+    100, // 100 admin operations per hour
+    'Too many admin operations, please try again later'
 );
 
 // Speed limiting for brute force protection
@@ -215,6 +229,8 @@ const securityLogger = (req, res, next) => {
 module.exports = {
     authRateLimit,
     generalRateLimit,
+    publicRateLimit,
+    adminRateLimit,
     uploadRateLimit,
     speedLimiter,
     securityHeaders,

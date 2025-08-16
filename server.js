@@ -22,6 +22,8 @@ const { protect } = require('./middleware/authMiddleware');
 const {
     authRateLimit,
     generalRateLimit,
+    publicRateLimit,
+    adminRateLimit,
     uploadRateLimit,
     speedLimiter,
     securityHeaders,
@@ -60,8 +62,7 @@ console.log(`Environment: ${isProduction ? 'Production' : 'Development'}`);
 // Security middleware setup (must be first)
 app.use(securityHeaders);
 app.use(securityLogger);
-app.use(generalRateLimit);
-app.use(speedLimiter);
+// Note: Rate limiting is now applied per route instead of globally
 app.use(mongoSanitize);
 app.use(hpp);
 

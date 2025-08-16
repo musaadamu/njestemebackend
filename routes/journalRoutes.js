@@ -1,13 +1,13 @@
 const express = require("express");
 const journalController = require("../controllers/journalController");
 const { protect, adminOnly } = require('../middleware/authMiddleware');
-const { uploadRateLimit, validateFileUpload } = require('../middleware/security');
+const { adminRateLimit, publicRateLimit, validateFileUpload } = require('../middleware/security');
 const { validateJournalSubmission, validateObjectId, validateSearchQuery } = require('../middleware/validation');
 
 const router = express.Router();
 
 // Upload journal route (requires admin authentication)
-router.post("/", protect, adminOnly, uploadRateLimit, (req, res, next) => {
+router.post("/", protect, adminOnly, adminRateLimit, (req, res, next) => {
     console.log('journalRoutes POST / upload route invoked');
     journalController.uploadMiddleware(req, res, (err) => {
         if (err) {
@@ -37,16 +37,16 @@ console.log('journalController.getJournalsFileInfo:', journalController.getJourn
 // Get journals file info (new route for verification)
 router.get("/file-info", journalController.getJournalsFileInfo);
 
-// Search journals
-router.get("/search", validateSearchQuery, journalController.searchJournals);
+// Search journals (with rate limiting to prevent abuse)
+router.get("/search", publicRateLimit, validateSearchQuery, journalController.searchJournals);
 
 // Get journal by ID
 router.get("/:id", validateObjectId, journalController.getJournalById);
 
 // Update journal status (admin only)
-router.patch("/:id/status", protect, adminOnly, validateObjectId, journalController.updateJournalStatus);
+router.patch("/:id/status", protect, adminOnly, adminRateLimit, validateObjectId, journalController.updateJournalStatus);
 
 // Delete journal (admin only)
-router.delete("/:id", protect, adminOnly, validateObjectId, journalController.deleteJournal);
+router.delete("/:id", protect, adminOnly, adminRateLimit, validateObjectId, journalController.deleteJournal);
 
 module.exports = router;
