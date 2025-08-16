@@ -1,5 +1,5 @@
 const { body, param, query, validationResult } = require('express-validator');
-const { validateEmail, validatePassword, validateName, validateObjectId } = require('./security');
+const { validateEmail, validatePassword, validateName, validateObjectId: isValidObjectId } = require('./security');
 
 // Validation error handler
 const handleValidationErrors = (req, res, next) => {
@@ -183,12 +183,12 @@ const validateJournalSubmission = [
 const validateObjectId = [
     param('id')
         .custom((value) => {
-            if (!validateObjectId(value)) {
+            if (!isValidObjectId(value)) {
                 throw new Error('Invalid ID format');
             }
             return true;
         }),
-    
+
     handleValidationErrors
 ];
 

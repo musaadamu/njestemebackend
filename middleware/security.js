@@ -47,8 +47,9 @@ const uploadRateLimit = createRateLimit(
 const speedLimiter = slowDown({
     windowMs: 15 * 60 * 1000, // 15 minutes
     delayAfter: 2, // Allow 2 requests per windowMs without delay
-    delayMs: 500, // Add 500ms delay per request after delayAfter
+    delayMs: () => 500, // Add 500ms delay per request after delayAfter (new v2 syntax)
     maxDelayMs: 20000, // Maximum delay of 20 seconds
+    validate: { delayMs: false } // Disable the warning message
 });
 
 // Security headers configuration
