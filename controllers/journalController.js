@@ -165,8 +165,9 @@ exports.uploadJournal = async (req, res) => {
     try {
         console.log('🔴🔴🔴 UPLOAD JOURNAL PROCESS STARTED - MODIFIED VERSION (TIMESTAMP: ' + new Date().toISOString() + ') 🔴🔴🔴');
         console.log('Upload journal request received');
-        console.log('Request body:', req.body);
-        console.log('Uploaded files:', req.files ? 'Files received' : 'No files received');
+        console.log('Request body:', JSON.stringify(req.body, null, 2));
+        console.log('Uploaded files:', req.files ? JSON.stringify(Object.keys(req.files), null, 2) : 'No files received');
+        console.log('Request headers:', req.headers);
         console.log('SERVER RESTART TEST - THIS LINE SHOULD APPEAR IN LOGS');
 
         if (req.files) {

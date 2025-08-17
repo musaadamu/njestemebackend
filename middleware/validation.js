@@ -10,7 +10,15 @@ const handleValidationErrors = (req, res, next) => {
             message: error.msg,
             value: error.value
         }));
-        
+
+        console.log('❌ Validation failed for request:', {
+            url: req.url,
+            method: req.method,
+            body: req.body,
+            files: req.files ? Object.keys(req.files) : 'No files',
+            errors: errorMessages
+        });
+
         return res.status(400).json({
             error: 'Validation failed',
             details: errorMessages
@@ -120,13 +128,13 @@ const validateJournalSubmission = [
         .trim()
         .isLength({ min: 5, max: 200 })
         .withMessage('Title must be between 5 and 200 characters')
-        .matches(/^[a-zA-Z0-9\s\-_:.,!?()]+$/)
+        .matches(/^[a-zA-Z0-9\s\-_:.,!?();"'&@#%]+$/)
         .withMessage('Title contains invalid characters'),
     
     body('abstract')
         .trim()
-        .isLength({ min: 50, max: 2000 })
-        .withMessage('Abstract must be between 50 and 2000 characters'),
+        .isLength({ min: 10, max: 2000 })
+        .withMessage('Abstract must be between 10 and 2000 characters'),
     
     body('authors')
         .custom((value) => {
@@ -142,8 +150,8 @@ const validateJournalSubmission = [
                     if (typeof author !== 'string' || author.trim().length < 2 || author.trim().length > 100) {
                         throw new Error('Each author name must be between 2 and 100 characters');
                     }
-                    if (!/^[a-zA-Z\s'-.,]+$/.test(author.trim())) {
-                        throw new Error('Author names can only contain letters, spaces, hyphens, apostrophes, periods, and commas');
+                    if (!/^[a-zA-Z\s'-.,&]+$/.test(author.trim())) {
+                        throw new Error('Author names can only contain letters, spaces, hyphens, apostrophes, periods, commas, and ampersands');
                     }
                 });
                 return true;

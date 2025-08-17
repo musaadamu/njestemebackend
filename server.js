@@ -73,7 +73,8 @@ const allowedOrigins = [
     'http://localhost:3000',           // Local frontend development
     'http://localhost:5173',           // Vite default port
     'https://coels-n-internal-journal-frontend.vercel.app', // Production frontend
-    'https://njostemejournal.com.ng'   // Production domain
+    'https://njostemejournal.com.ng',  // Production domain
+    'https://www.njostemejournal.com.ng' // Production domain with www
 ].filter(Boolean);
 
 console.log('Allowed CORS origins:', allowedOrigins);
@@ -106,8 +107,8 @@ app.use((req, res, next) => {
     }
 
     res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,HEAD');
-    // Add 'cache-control' to allowed headers to fix CORS preflight error
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, cache-control');
+    // Add security headers including CSRF token
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, cache-control, X-CSRF-Token');
     res.header('Access-Control-Expose-Headers', 'Authorization, Content-Disposition, Content-Type, Content-Length');
 
     // Handle preflight requests
