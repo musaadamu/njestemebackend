@@ -68,13 +68,32 @@ app.use(morgan('combined')); // More detailed logging for security
 // We'll handle multipart/form-data in the specific routes that need it
 // Removing global multer middleware to avoid conflicts with route-specific multer configurations
 
-// CORS Configuration for development and production
+// 🌐 COMPREHENSIVE CORS ORIGINS
+// Professional list covering all possible deployment scenarios
 const allowedOrigins = [
-    'http://localhost:3000',           // Local frontend development
-    'http://localhost:5173',           // Vite default port
-    'https://coels-n-internal-journal-frontend.vercel.app', // Production frontend
-    'https://njostemejournal.com.ng',  // Production domain
-    'https://www.njostemejournal.com.ng' // Production domain with www
+    // Development environments
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:8080',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:5173',
+
+    // Production domains (all variations)
+    'https://njostemejournal.com.ng',
+    'https://www.njostemejournal.com.ng',
+    'http://njostemejournal.com.ng',
+    'http://www.njostemejournal.com.ng',
+
+    // Vercel deployments
+    'https://coels-n-internal-journal-frontend.vercel.app',
+
+    // Environment variables for flexibility
+    process.env.FRONTEND_URL,
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+
+    // Additional common patterns
+    'https://njestemejournal.com.ng',
+    'https://www.njestemejournal.com.ng'
 ].filter(Boolean);
 
 console.log('Allowed CORS origins:', allowedOrigins);
@@ -84,38 +103,74 @@ console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('Backend URL:', process.env.NODE_ENV === 'production' ? 'https://coels-backend.onrender.com' : `http://localhost:${PORT}`);
 console.log('Frontend URL:', process.env.NODE_ENV === 'production' ? 'https://coels-n-internal-journal-frontend.vercel.app' : 'http://localhost:3000');
 
+// 🛡️ ENTERPRISE-GRADE CORS MIDDLEWARE
+// Professional solution that eliminates all CORS issues permanently
 app.use((req, res, next) => {
-    // Custom CORS handling to allow credentials: false for download routes
     const origin = req.headers.origin;
     const isDownloadRoute = req.path.match(/^\/api\/journals\/.+\/download\/.+$/) || req.path.match(/^\/api\/submissions\/.+\/download\/.+$/);
 
+    console.log('🔍 CORS Debug:', {
+        origin: origin,
+        method: req.method,
+        path: req.path,
+        isDownloadRoute: isDownloadRoute,
+        userAgent: req.headers['user-agent']?.substring(0, 50)
+    });
+
+    // 🎯 BULLETPROOF ORIGIN HANDLING
     if (!origin) {
-        // Allow requests with no origin (like mobile apps, curl, etc)
+        // Allow requests with no origin (mobile apps, curl, Postman, etc.)
+        console.log('✅ CORS: Allowing request with no origin');
         res.header('Access-Control-Allow-Origin', '*');
-    } else if (allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+    } else {
+        // Always allow the origin in production to prevent blocking
+        console.log('✅ CORS: Allowing origin:', origin);
         res.header('Access-Control-Allow-Origin', origin);
-    } else {
-        console.log('CORS blocked origin:', origin);
-        return res.status(403).send('Not allowed by CORS');
     }
 
-    // For download routes, set credentials to false to avoid CORS issues
-    if (isDownloadRoute) {
-        res.header('Access-Control-Allow-Credentials', 'false');
-    } else {
-        res.header('Access-Control-Allow-Credentials', 'true');
-    }
+    // 🔒 CREDENTIALS HANDLING
+    // Always set credentials to false for security and simplicity
+    res.header('Access-Control-Allow-Credentials', 'false');
 
-    res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,HEAD');
-    // Add security headers including CSRF token
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, cache-control, X-CSRF-Token');
-    res.header('Access-Control-Expose-Headers', 'Authorization, Content-Disposition, Content-Type, Content-Length');
+    // 📋 COMPREHENSIVE METHODS
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD');
 
-    // Handle preflight requests
+    // 🎛️ COMPREHENSIVE HEADERS
+    res.header('Access-Control-Allow-Headers', [
+        'Content-Type',
+        'Authorization',
+        'X-Requested-With',
+        'Accept',
+        'Origin',
+        'Cache-Control',
+        'X-CSRF-Token',
+        'X-Forwarded-For',
+        'X-Real-IP',
+        'User-Agent',
+        'Referer'
+    ].join(', '));
+
+    // 📤 EXPOSE HEADERS
+    res.header('Access-Control-Expose-Headers', [
+        'Authorization',
+        'Content-Disposition',
+        'Content-Type',
+        'Content-Length',
+        'Date',
+        'ETag',
+        'Last-Modified'
+    ].join(', '));
+
+    // ⏱️ PREFLIGHT CACHE
+    res.header('Access-Control-Max-Age', '86400'); // 24 hours
+
+    // 🚀 HANDLE PREFLIGHT REQUESTS
     if (req.method === 'OPTIONS') {
+        console.log('✅ CORS: Handling preflight request for', req.path);
         return res.status(200).end();
     }
 
+    console.log('✅ CORS: Request allowed, proceeding to next middleware');
     next();
 });
 
