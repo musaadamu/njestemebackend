@@ -176,12 +176,31 @@ app.use((req, res, next) => {
 
 // CORS middleware already defined above
 
-// Health check endpoint
+// 🏥 COMPREHENSIVE HEALTH CHECK WITH CORS VERIFICATION
 app.get('/health', (req, res) => {
     res.status(200).json({
         status: 'ok',
         message: 'Server is running',
-        environment: process.env.NODE_ENV || 'development'
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development',
+        cors: {
+            origin: req.headers.origin || 'no-origin',
+            allowedOrigins: allowedOrigins.length,
+            userAgent: req.headers['user-agent']?.substring(0, 50) || 'unknown'
+        }
+    });
+});
+
+// 🧪 CORS TEST ENDPOINT
+app.get('/cors-test', (req, res) => {
+    res.status(200).json({
+        message: 'CORS is working correctly!',
+        origin: req.headers.origin || 'no-origin',
+        timestamp: new Date().toISOString(),
+        corsHeaders: {
+            'access-control-allow-origin': res.getHeader('Access-Control-Allow-Origin'),
+            'access-control-allow-methods': res.getHeader('Access-Control-Allow-Methods')
+        }
     });
 });
 
