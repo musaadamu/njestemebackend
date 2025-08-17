@@ -126,9 +126,9 @@ const validateProfileUpdate = [
 const validateJournalSubmission = [
     body('title')
         .trim()
-        .isLength({ min: 5, max: 200 })
-        .withMessage('Title must be between 5 and 200 characters')
-        .matches(/^[a-zA-Z0-9\s\-_:.,!?();"'&@#%]+$/)
+        .isLength({ min: 5, max: 300 })
+        .withMessage('Title must be between 5 and 300 characters')
+        .matches(/^[a-zA-Z0-9\s\-_:.,!?();"'&@#%\/\[\]{}+=*^~`|\\<>]+$/)
         .withMessage('Title contains invalid characters'),
     
     body('abstract')
@@ -174,8 +174,8 @@ const validateJournalSubmission = [
                     if (typeof keyword !== 'string' || keyword.trim().length < 2 || keyword.trim().length > 50) {
                         throw new Error('Each keyword must be between 2 and 50 characters');
                     }
-                    if (!/^[a-zA-Z0-9\s\-_]+$/.test(keyword.trim())) {
-                        throw new Error('Keywords can only contain letters, numbers, spaces, hyphens, and underscores');
+                    if (!/^[a-zA-Z0-9\s\-_.,()&'":;]+$/.test(keyword.trim())) {
+                        throw new Error('Keywords can only contain letters, numbers, spaces, hyphens, underscores, periods, commas, parentheses, ampersands, quotes, colons, and semicolons');
                     }
                 });
                 return true;
