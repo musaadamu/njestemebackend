@@ -167,8 +167,17 @@ exports.uploadJournal = async (req, res) => {
         console.log('Upload journal request received');
         console.log('Request body:', JSON.stringify(req.body, null, 2));
         console.log('Uploaded files:', req.files ? JSON.stringify(Object.keys(req.files), null, 2) : 'No files received');
-        console.log('Request headers:', req.headers);
+        console.log('Request headers content-type:', req.headers['content-type']);
         console.log('SERVER RESTART TEST - THIS LINE SHOULD APPEAR IN LOGS');
+
+        // Debug: Show exactly what we received
+        console.log('🔍 DEBUGGING UPLOAD DATA:');
+        console.log('- Title:', req.body.title);
+        console.log('- Abstract length:', req.body.abstract?.length);
+        console.log('- Authors (raw):', req.body.authors);
+        console.log('- Keywords (raw):', req.body.keywords);
+        console.log('- PDF file:', req.files?.pdfFile ? 'Present' : 'Missing');
+        console.log('- DOCX file:', req.files?.docxFile ? 'Present' : 'Missing');
 
         if (req.files) {
             console.log('Files details:', {
