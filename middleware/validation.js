@@ -128,7 +128,7 @@ const validateJournalSubmission = [
         .trim()
         .isLength({ min: 5, max: 300 })
         .withMessage('Title must be between 5 and 300 characters')
-        .matches(/^[a-zA-Z0-9\s\-_:.,!?();"'&@#%\/\[\]{}+=*^~`|\\<>]+$/)
+        .matches(/^[a-zA-Z0-9\s\-_:.,!?();"'&@#%\/\[\]{}+=*^~`|\\<>']+$/)
         .withMessage('Title contains invalid characters'),
     
     body('abstract')
