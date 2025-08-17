@@ -2,11 +2,11 @@ const express = require('express');
 const router = express.Router();
 const submissionController = require('../controllers/submissionController');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
-const { adminRateLimit, publicRateLimit, validateFileUpload } = require('../middleware/security');
+const { validateFileUpload } = require('../middleware/security');
 const { validateJournalSubmission, validateObjectId, validateSearchQuery } = require('../middleware/validation');
 
-// Upload submission with file (public submissions with moderate rate limiting)
-router.post("/", publicRateLimit, (req, res, next) => {
+// Upload submission with file
+router.post("/", (req, res, next) => {
     submissionController.uploadMiddleware(req, res, (err) => {
         if (err) {
             console.error('Multer error in route handler:', err);
@@ -59,18 +59,18 @@ router.post("/test-upload", (req, res, next) => {
 });
 
 // Get all submissions with pagination and filtering (admin only)
-router.get('/', protect, adminOnly, adminRateLimit, submissionController.getSubmissions);
+router.get('/', protect, adminOnly, submissionController.getSubmissions);
 
 // Search submissions (admin only)
-router.get('/search', protect, adminOnly, adminRateLimit, validateSearchQuery, submissionController.searchSubmissions);
+router.get('/search', protect, adminOnly, validateSearchQuery, submissionController.searchSubmissions);
 
 // Get a single submission by ID (admin only)
-router.get('/:id', protect, adminOnly, adminRateLimit, validateObjectId, submissionController.getSubmissionById);
+router.get('/:id', protect, adminOnly, validateObjectId, submissionController.getSubmissionById);
 
 // Update submission status (admin only)
-router.patch('/:id/status', protect, adminOnly, adminRateLimit, validateObjectId, submissionController.updateSubmissionStatus);
+router.patch('/:id/status', protect, adminOnly, validateObjectId, submissionController.updateSubmissionStatus);
 
 // Delete a submission (admin only)
-router.delete('/:id', protect, adminOnly, adminRateLimit, validateObjectId, submissionController.deleteSubmission);
+router.delete('/:id', protect, adminOnly, validateObjectId, submissionController.deleteSubmission);
 
 module.exports = router;

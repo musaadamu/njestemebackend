@@ -1,70 +1,10 @@
-const rateLimit = require('express-rate-limit');
-const slowDown = require('express-slow-down');
 const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss');
 const hpp = require('hpp');
 const validator = require('validator');
 
-// Rate limiting configuration
-const createRateLimit = (windowMs, max, message) => {
-    return rateLimit({
-        windowMs,
-        max,
-        message: { error: message },
-        standardHeaders: true,
-        legacyHeaders: false,
-        handler: (req, res) => {
-            console.log(`Rate limit exceeded for IP: ${req.ip}, Path: ${req.path}`);
-            res.status(429).json({
-                error: message,
-                retryAfter: Math.round(windowMs / 1000)
-            });
-        }
-    });
-};
-
-// Different rate limits for different endpoints
-const authRateLimit = createRateLimit(
-    15 * 60 * 1000, // 15 minutes
-    10, // 10 attempts (increased from 5)
-    'Too many authentication attempts, please try again later'
-);
-
-const generalRateLimit = createRateLimit(
-    15 * 60 * 1000, // 15 minutes
-    1000, // 1000 requests (increased from 100)
-    'Too many requests, please try again later'
-);
-
-const uploadRateLimit = createRateLimit(
-    60 * 60 * 1000, // 1 hour
-    20, // 20 uploads (increased from 10)
-    'Too many file uploads, please try again later'
-);
-
-// More lenient rate limit for public endpoints (journals, etc.)
-const publicRateLimit = createRateLimit(
-    15 * 60 * 1000, // 15 minutes
-    2000, // 2000 requests
-    'Too many requests, please try again later'
-);
-
-// Admin operations rate limit (more lenient for complex operations)
-const adminRateLimit = createRateLimit(
-    60 * 60 * 1000, // 1 hour window
-    100, // 100 admin operations per hour
-    'Too many admin operations, please try again later'
-);
-
-// Speed limiting for brute force protection
-const speedLimiter = slowDown({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    delayAfter: 2, // Allow 2 requests per windowMs without delay
-    delayMs: () => 500, // Add 500ms delay per request after delayAfter (new v2 syntax)
-    maxDelayMs: 20000, // Maximum delay of 20 seconds
-    validate: { delayMs: false } // Disable the warning message
-});
+// Rate limiting removed - no longer using rate limiting middleware
 
 // Security headers configuration
 const securityHeaders = helmet({
@@ -227,12 +167,6 @@ const securityLogger = (req, res, next) => {
 };
 
 module.exports = {
-    authRateLimit,
-    generalRateLimit,
-    publicRateLimit,
-    adminRateLimit,
-    uploadRateLimit,
-    speedLimiter,
     securityHeaders,
     sanitizeInput,
     mongoSanitize: mongoSanitize(),
