@@ -358,6 +358,7 @@ exports.uploadJournal = async (req, res) => {
             }
 
             // Send response after successful save
+            // Include Cloudinary upload results and any upload errors for debugging
             return res.status(201).json({
                 message: uploadMessage,
                 journal: {
@@ -370,9 +371,17 @@ exports.uploadJournal = async (req, res) => {
                     hasPdf: !!journal.pdfFileId,
                     docxLink: journal.docxWebViewLink || null,
                     pdfLink: journal.pdfWebViewLink || null,
-                    googleDriveUploadFailed: !!(pdfUploadError || docxUploadError),
-                    googleDriveError: pdfUploadError || docxUploadError ?
-                        (pdfUploadError?.message || docxUploadError?.message) : null
+                    docxCloudinaryUrl: journal.docxCloudinaryUrl || null,
+                    pdfCloudinaryUrl: journal.pdfCloudinaryUrl || null,
+                    docxFileId: journal.docxFileId || null,
+                    pdfFileId: journal.pdfFileId || null,
+                    // Raw upload results (if available) and any error messages
+                    _cloudinary: {
+                        pdfUploadResult: pdfUploadResult || null,
+                        docxUploadResult: docxUploadResult || null,
+                        pdfUploadError: pdfUploadError ? (pdfUploadError.message || JSON.stringify(pdfUploadError)) : null,
+                        docxUploadError: docxUploadError ? (docxUploadError.message || JSON.stringify(docxUploadError)) : null
+                    }
                 }
             });
         } catch (err) {
