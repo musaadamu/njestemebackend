@@ -40,6 +40,12 @@ router.get("/file-info", journalController.getJournalsFileInfo);
 // Search journals
 router.get("/search", validateSearchQuery, journalController.searchJournals);
 
+// Cloudinary client upload signature (admin only)
+router.get('/upload-signature', protect, adminOnly, journalController.getUploadSignature);
+
+// Create journal from Cloudinary metadata (client-side upload flow)
+router.post('/from-cloudinary', protect, adminOnly, journalController.createJournalFromCloudinary);
+
 // Get journal by ID
 router.get("/:id", validateObjectId, journalController.getJournalById);
 
