@@ -231,8 +231,7 @@ exports.uploadJournal = async (req, res) => {
             const pdfStats = await fsPromises.stat(pdfFile.path);
             console.log('PDF file exists and is ready for upload, size:', pdfStats.size, 'bytes');
             pdfUploadResult = await cloudinary.uploader.upload(pdfFile.path, {
-                folder: 'Upload',
-                folder: 'Upload',
+                folder: 'coelsN_Uploads/Journals',
                 resource_type: 'raw',
                 public_id: `${Date.now()}-${pdfFile.filename}`,
                 use_filename: true,
@@ -259,8 +258,7 @@ exports.uploadJournal = async (req, res) => {
             const docxStats = await fsPromises.stat(docxFile.path);
             console.log('DOCX file exists and is ready for upload, size:', docxStats.size, 'bytes');
             docxUploadResult = await cloudinary.uploader.upload(docxFile.path, {
-                folder: 'Upload',
-                folder: 'Upload',
+                folder: 'coelsN_Uploads/Journals',
                 resource_type: 'raw',
                 public_id: `${Date.now()}-${docxFile.filename}`,
                 use_filename: true,
@@ -660,5 +658,79 @@ exports.reuploadCloudinary = async (req, res) => {
     } catch (error) {
         console.error('Reupload Cloudinary error:', error);
         return res.status(500).json({ message: 'Server error during reupload', error: error.message });
+    }
+};
+
+// Return a Cloudinary upload signature and metadata for client-side uploads
+exports.getUploadSignature = async (req, res) => {
+    try {
+        const timestamp = Math.floor(Date.now() / 1000);
+        const uploadFolder = process.env.CLOUDINARY_UPLOAD_FOLDER || 'coelsN_Uploads/Journals';
+
+        const paramsToSign = { timestamp };
+        // include folder in signature to bind upload to specific folder
+        if (uploadFolder) paramsToSign.folder = uploadFolder;
+
+        const apiSecret = process.env.CLOUDINARY_API_SECRET || cloudinary.config().api_secret;
+        const signature = cloudinary.utils.api_sign_request(paramsToSign, apiSecret);
+
+        return res.json({
+            signature,
+            timestamp,
+            apiKey: process.env.CLOUDINARY_API_KEY || cloudinary.config().api_key,
+            cloudName: process.env.CLOUDINARY_CLOUD_NAME || cloudinary.config().cloud_name,
+            uploadUrl: `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME || cloudinary.config().cloud_name}/raw/upload`,
+            folder: uploadFolder
+        });
+    } catch (err) {
+        console.error('Error creating Cloudinary signature:', err);
+        return res.status(500).json({ message: 'Failed to create Cloudinary signature', error: err.message });
+    }
+};
+
+// Create a journal from Cloudinary metadata (client-side direct upload flow)
+exports.createJournalFromCloudinary = async (req, res) => {
+    try {
+        const { title, abstract, authors, keywords, docxCloudinaryUrl, pdfCloudinaryUrl, docxFileId, pdfFileId } = req.body;
+
+        if (!title || !abstract) {
+            return res.status(400).json({ message: 'Title and abstract are required' });
+        }
+
+        const authorArray = processArrayData(authors);
+        const keywordArray = processArrayData(keywords);
+
+        const journal = new Journal({
+            title,
+            abstract,
+            authors: authorArray,
+            keywords: keywordArray,
+            docxFileId: docxFileId || null,
+            pdfFileId: pdfFileId || null,
+            docxWebViewLink: docxCloudinaryUrl || null,
+            pdfWebViewLink: pdfCloudinaryUrl || null,
+            docxCloudinaryUrl: docxCloudinaryUrl || null,
+            pdfCloudinaryUrl: pdfCloudinaryUrl || null,
+            docxFilePath: null,
+            pdfFilePath: null,
+            status: 'published'
+        });
+
+        await journal.save();
+
+        return res.status(201).json({
+            message: 'Journal created from Cloudinary metadata',
+            journal: {
+                id: journal._id,
+                title: journal.title,
+                pdfCloudinaryUrl: journal.pdfCloudinaryUrl,
+                docxCloudinaryUrl: journal.docxCloudinaryUrl,
+                pdfFileId: journal.pdfFileId,
+                docxFileId: journal.docxFileId
+            }
+        });
+    } catch (err) {
+        console.error('Error creating journal from Cloudinary metadata:', err);
+        return res.status(500).json({ message: 'Failed to create journal', error: err.message });
     }
 };

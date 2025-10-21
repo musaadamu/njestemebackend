@@ -49,6 +49,12 @@ router.patch("/:id/status", protect, adminOnly, validateObjectId, journalControl
 // Admin endpoint: re-upload missing Cloudinary files for a journal
 router.post('/:id/reupload-cloudinary', protect, adminOnly, validateObjectId, journalController.reuploadCloudinary);
 
+// Cloudinary client upload signature (admin only)
+router.get('/upload-signature', protect, adminOnly, journalController.getUploadSignature);
+
+// Create journal from Cloudinary metadata (client-side upload flow)
+router.post('/from-cloudinary', protect, adminOnly, journalController.createJournalFromCloudinary);
+
 // Delete journal (admin only)
 router.delete("/:id", protect, adminOnly, validateObjectId, journalController.deleteJournal);
 
