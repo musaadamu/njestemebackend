@@ -550,3 +550,106 @@ exports.searchJournals = async (req, res) => {
         });
     }
 };
+
+// Admin helper: re-upload missing files for a journal to Cloudinary and update DB
+exports.reuploadCloudinary = async (req, res) => {
+    try {
+        const journalId = req.params.id;
+        console.log('Reupload Cloudinary requested for journal:', journalId);
+
+        const Journal = require('../models/Journal');
+        const journal = await Journal.findById(journalId);
+        if (!journal) return res.status(404).json({ message: 'Journal not found' });
+
+        // Resolve possible local file paths (similar to existing helpers)
+        const path = require('path');
+        const fs = require('fs');
+
+        const DOCUMENT_STORAGE_PATH = process.env.DOCUMENT_STORAGE_PATH
+            ? (process.env.DOCUMENT_STORAGE_PATH.startsWith('../')
+                ? path.resolve(path.join(__dirname, '..', process.env.DOCUMENT_STORAGE_PATH))
+                : path.resolve(process.env.DOCUMENT_STORAGE_PATH))
+            : path.resolve(path.join(__dirname, '..', 'uploads', 'journals'));
+
+        const resolveLocalPath = (relativePath) => {
+            if (!relativePath) return null;
+            if (path.isAbsolute(relativePath) && fs.existsSync(relativePath)) return relativePath;
+            const filename = path.basename(relativePath);
+            const candidates = [
+                path.resolve(path.join(DOCUMENT_STORAGE_PATH, filename)),
+                path.resolve(path.join(__dirname, '..', 'uploads', 'journals', filename)),
+                path.resolve(path.join(__dirname, 'uploads', 'journals', filename)),
+                path.resolve(path.join(__dirname, '..', '..', 'uploads', 'journals', filename))
+            ];
+            for (const p of candidates) {
+                try {
+                    if (fs.existsSync(p)) return p;
+                } catch (e) { /* ignore */ }
+            }
+            return null;
+        };
+
+        // Cloudinary folder from env or default
+        const uploadFolder = process.env.CLOUDINARY_UPLOAD_FOLDER || 'Upload';
+
+        // Re-upload PDF if missing cloudinary url but local file exists
+        if (!journal.pdfCloudinaryUrl && journal.pdfFilePath) {
+            const localPdf = resolveLocalPath(journal.pdfFilePath);
+            if (localPdf) {
+                console.log('Found local PDF to upload:', localPdf);
+                try {
+                    const pdfResult = await cloudinary.uploader.upload(localPdf, {
+                        folder: uploadFolder,
+                        resource_type: 'raw',
+                        public_id: `${Date.now()}-${path.basename(localPdf)}`,
+                        use_filename: true,
+                        unique_filename: false,
+                        overwrite: true
+                    });
+                    console.log('PDF re-uploaded to Cloudinary:', pdfResult.secure_url);
+                    journal.pdfFileId = pdfResult.public_id;
+                    journal.pdfWebViewLink = pdfResult.secure_url;
+                    journal.pdfCloudinaryUrl = pdfResult.secure_url;
+                } catch (err) {
+                    console.error('PDF reupload failed:', err);
+                }
+            } else {
+                console.warn('Local PDF not found for journal:', journal.pdfFilePath);
+            }
+        }
+
+        // Re-upload DOCX if missing cloudinary url but local file exists
+        if (!journal.docxCloudinaryUrl && journal.docxFilePath) {
+            const localDocx = resolveLocalPath(journal.docxFilePath);
+            if (localDocx) {
+                console.log('Found local DOCX to upload:', localDocx);
+                try {
+                    const docxResult = await cloudinary.uploader.upload(localDocx, {
+                        folder: uploadFolder,
+                        resource_type: 'raw',
+                        public_id: `${Date.now()}-${path.basename(localDocx)}`,
+                        use_filename: true,
+                        unique_filename: false,
+                        overwrite: true
+                    });
+                    console.log('DOCX re-uploaded to Cloudinary:', docxResult.secure_url);
+                    journal.docxFileId = docxResult.public_id;
+                    journal.docxWebViewLink = docxResult.secure_url;
+                    journal.docxCloudinaryUrl = docxResult.secure_url;
+                } catch (err) {
+                    console.error('DOCX reupload failed:', err);
+                }
+            } else {
+                console.warn('Local DOCX not found for journal:', journal.docxFilePath);
+            }
+        }
+
+        // Save only if we updated anything
+        await journal.save();
+
+        return res.status(200).json({ message: 'Reupload attempted', journal });
+    } catch (error) {
+        console.error('Reupload Cloudinary error:', error);
+        return res.status(500).json({ message: 'Server error during reupload', error: error.message });
+    }
+};

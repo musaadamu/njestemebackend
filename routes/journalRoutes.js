@@ -46,6 +46,9 @@ router.get("/:id", validateObjectId, journalController.getJournalById);
 // Update journal status (admin only)
 router.patch("/:id/status", protect, adminOnly, validateObjectId, journalController.updateJournalStatus);
 
+// Admin endpoint: re-upload missing Cloudinary files for a journal
+router.post('/:id/reupload-cloudinary', protect, adminOnly, validateObjectId, journalController.reuploadCloudinary);
+
 // Delete journal (admin only)
 router.delete("/:id", protect, adminOnly, validateObjectId, journalController.deleteJournal);
 
